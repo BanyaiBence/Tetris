@@ -9,5 +9,6 @@ class Colors:
     WHITE = (255, 255, 255)
     BLACK = (0, 0, 0)
 
+    @property
     def random_color():
         return (r(0, 255), r(0, 255), r(0, 255))
