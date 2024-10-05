@@ -1,6 +1,6 @@
 import pygame as pg
 from random import choice
-import colors
+from colors import Colors
 import itertools
 
 class Game:
@@ -23,12 +23,17 @@ class Game:
 
         self.matrix = [[0 for i in range(15)] for j in range(24)]
         self.shape = self.new_shape()
+        self.shape_color = Colors.random_color()
+        self.shape_pos = [0, 5]
+
 
     def new_shape(self):
         shape = choice(self.SHAPES)
         return shape
     
     
+    # def draw_shape(self):
+
     def draw(self):
         self.window.fill(colors.BLACK)
 
