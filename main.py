@@ -1,7 +1,9 @@
 import pygame as pg
 from random import choice
 from colors import Colors
-import itertools
+
+pg.init()
+pg.font.init()
 
 class Game:
     WIDTH = 600
@@ -19,6 +21,8 @@ class Game:
     LEFT_EVENT = pg.USEREVENT + 1
     RIGHT_EVENT = pg.USEREVENT + 2
     DOWN_EVENT = pg.USEREVENT + 3
+    FONT = pg.font.SysFont("Arial", 16)
+    DEBUG = True
     def __init__(self):
         pg.init()
         self.window = pg.display.set_mode((Game.WIDTH, Game.HEIGHT))
@@ -48,10 +52,13 @@ class Game:
         S = Game.SQUARE_SIZE
         for i, row in enumerate(self.matrix):
             for j, col in enumerate(row):
+                text = self.FONT.render(f"({i},{j})", False, Colors.WHITE)
+                self.window.blit(text, (j*S, i*S))
                 if col == 0:
                     continue
                 pg.draw.rect(self.window, col,
                     (j*S, i*S, S, S))
+                
 
         self.draw_shape()
         pg.display.flip()
@@ -95,11 +102,12 @@ class Game:
                     pg.time.set_timer(Game.DOWN_EVENT, 100000)
 
     def run(self):
-        pg.time.set_timer(Game.FALL_EVENT, 500)
+        if not self.DEBUG:
+            pg.time.set_timer(Game.FALL_EVENT, 500)
         while True:
             self.clock.tick(60)
             self.events()
-            if not self.collision(self.shape):
+            if not self.collision(self.shape, self.shape_pos, self.next_pos):
                 self.move()
             self.clear_rows()
             self.draw()
@@ -114,11 +122,11 @@ class Game:
         return True
 
 
-    def collision(self, shape=None):
-        x = self.shape_pos[1]
-        y = self.shape_pos[0]
-        nx = self.next_pos[1]
-        ny = self.next_pos[0]
+    def collision(self, shape=None, shape_pos=[0, 0], next_pos=[0, 0]):
+        x = shape_pos[1]
+        y = shape_pos[0]
+        nx = next_pos[1]
+        ny = next_pos[0]
         d = (ny - y, nx - x)
 
         if d[0]:
@@ -140,6 +148,19 @@ class Game:
                 for j, col in enumerate(row):
                     if col and self.in_bounds((y+i, nx+j)) and self.matrix[y+i][nx+j]:
                         return True
+                    
+    def test_collision(self, shape=None, shape_pos=[0, 0]):
+        x = shape_pos[1]
+        y = shape_pos[0]
+        if y + len(shape) >= 24:
+            return True
+        if x < 0 or x + len(shape[0]) >= 16:
+            return True
+        for i, row in enumerate(shape):
+            for j, col in enumerate(row):
+                if col and self.in_bounds((y+i, x+j)) and self.matrix[y+i][x+j]:
+                    return True
+
 
         
     def save_shape(self):
@@ -157,25 +178,16 @@ class Game:
         self.shape_pos = [0, 5]
         self.next_pos = [0, 5]
 
-    def move_shape(self, dir):
-        new_pos = [self.shape_pos[0] + dir[0], self.shape_pos[1] + dir[1]]
-        if new_pos[1] < 0:
-            return
-        right = self.shape.right
-        if new_pos[1] + right > 15:
-            return
-        
-
-        if self.check_collision(new_pos):
-            return
-
-        self.shape_pos[0] += dir[0]
-        self.shape_pos[1] += dir[1]
 
     def rotate_shape(self):
         new_shape = list(zip(*self.shape[::-1]))
-        if not self.collision(new_shape):
+        
+        succ = False
+        if not self.test_collision(new_shape, self.shape_pos):
+            succ = True
             self.shape = new_shape 
+        if self.DEBUG:
+            print(f"Rotate: {self.shape} -> {new_shape}: {'SUCCESS' if succ else 'FAILURE'}")
     
     def clear_rows(self):
         for i, row in enumerate(self.matrix):
@@ -184,6 +196,9 @@ class Game:
                 self.matrix.insert(0, [0 for i in range(15)])
 
 
+def pretty_print(matrix):
+    for row in matrix:
+        print(row)
 if __name__ == '__main__':
     game = Game()
     game.run()
